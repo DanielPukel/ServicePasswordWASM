@@ -1,0 +1,72 @@
+﻿@page "/login"
+@attribute [AllowAnonymous]
+@using AuthentificationTEsting.WASP.Query;
+@using AuthentificationTEsting.WASP.Stores;
+@using Firebase.Auth;
+@using Microsoft.AspNetCore.Authorization;
+@using Newtonsoft.Json;
+@using ServicePassword.API.Responses;
+@using static AuthentificationTEsting.WASP.Models.FirebaseLoginAuth;
+@inject NavigationManager NavigationManager
+@inject AuthentificationStore _authentificationStore
+@inject IGetServicePasswordQuery _getServicePasswordQuery
+@inject IJSRuntime _jsRuntime
+
+
+<div class="col text-center m-3">
+	<h1 class="">Home Page:</h1>
+</div>
+<div class="col text-center m-6">
+	<h3>Your code:</h3>
+	<h2>@password</h2>
+</div>
+<div class="col text-center m-6">
+	<h3>Your information:</h3>
+	<p>@Username</p>
+	@if (!verified)
+	{
+        <button type="button" class="btn btn-outline-secondary" @onclick="_authentificationStore.Verify">Verify email?</button>
+	}
+	else
+	{
+		<p>Verified</p>
+	}
+</div>
+<div class="col text-center mt-3">
+	<button type="button" class="btn btn-outline-secondary" @onclick="LogOut">Log out?</button>
+</div>
+
+
+@code {
+    public string Username => _authentificationStore.currentUser?.DisplayName ?? "Guest";
+    public bool verified => _authentificationStore.currentUser?.IsEmailVerified ?? false;
+    public string password { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            ServicePasswordResponse _servicePasswordResponse = await _getServicePasswordQuery.Execute();
+            password = _servicePasswordResponse.Message;
+            Console.WriteLine(_servicePasswordResponse.Message);
+            Console.WriteLine(verified);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await Task.Delay(500);
+            NavigationManager.NavigateTo("/");
+            await _jsRuntime.InvokeVoidAsync("alert", ex.Message);
+        }
+    }
+
+
+    public async Task LogOut()
+    {
+        await _jsRuntime.InvokeVoidAsync("alert", "Log out successfull");
+        await Task.Delay(500);
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    //public async void Verify() => await _authentificationStore.Verify();
+}
